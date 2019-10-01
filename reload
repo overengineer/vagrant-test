@@ -1,0 +1,27 @@
+#!/bin/bash
+ps -ef | grep -P '(vagrant|ruby|virtualbox)' | awk '{print $2}' | sudo kill -9 `cat`
+cp Vagrantfile.rb Vagrantfile
+vagrant halt
+sleep 10
+vagrant destroy -f
+vagrant up
+
+ssh-keygen -f ~/.ssh/vagrant-key
+echo "[testcluster]" > ansible_hosts.ini
+
+vagrant status master
+ssh-copy-id -i ~/.ssh/vagrant-key vagrant@192.168.56.10
+echo "#master ansible_ssh_host=192.168.56.10" >> ansible_hosts.ini
+
+for i in {1..2}
+do
+    vagrant status master
+    ssh-copy-id -i ~/.ssh/vagrant-key vagrant@192.168.56.1$i
+    echo "node$i ansible_ssh_host=192.168.56.1$i" >> ansible_hosts.ini
+done
+
+echo "[testcluster:vars] 
+ansible_ssh_user=vagrant 
+ansible_ssh_pass=vagrant" >> ansible_hosts.ini
+
+ansible-playbook ssh-auth.yml -i ansible_hosts.ini

@@ -1,0 +1,17 @@
+---
+- name: SSH Key Authorization
+  hosts: testcluster
+  become: yes
+  become_method: sudo
+  remote_user: vagrant
+  #example
+  any_errors_fatal: True
+
+  tasks:
+
+  #lookup to access value from file
+  - name: Set authorized key taken from file
+    authorized_key:
+      user: vagrant
+      state: present
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
